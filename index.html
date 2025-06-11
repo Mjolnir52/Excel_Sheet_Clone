@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel-like Spreadsheet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f3f3f3;
+            color: #333;
+        }
+        
+        .toolbar {
+            background-color: #f3f3f3;
+            padding: 5px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid #d4d4d4;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .toolbar_icon_button, button {
+            background-color: #f3f3f3;
+            border: 1px solid #d4d4d4;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            height: 28px;
+            min-width: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toolbar_icon_button:hover, button:hover {
+            background-color: #e5e5e5;
+        }
+        
+        select {
+            height: 28px;
+            border: 1px solid #d4d4d4;
+            border-radius: 3px;
+            padding: 0 5px;
+            background-color: white;
+            font-size: 12px;
+        }
+        
+        label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #333 !important;
+            padding: 0 5px;
+        }
+        
+        input[type="color"] {
+            width: 25px;
+            height: 25px;
+            border: 1px solid #d4d4d4;
+            padding: 0;
+        }
+        
+        .new_sheet_btn {
+            background-color: #2a5885;
+            color: white;
+            border: none;
+            padding: 0 15px;
+        }
+        
+        .new_sheet_btn:hover {
+            background-color: #1e4b7b;
+        }
+        
+        .sheet-container {
+            margin: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: auto;
+            height: calc(100vh - 100px);
+        }
+        
+        #importFile {
+            display: none;
+        }
+        
+        /* Style for the spreadsheet grid */
+        .grid {
+            display: grid;
+            grid-template-columns: 50px repeat(26, 100px);
+            grid-template-rows: 30px repeat(100, 30px);
+            border: 1px solid #d4d4d4;
+        }
+        
+        .header-cell {
+            background-color: #f3f3f3;
+            border: 1px solid #d4d4d4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .row-header {
+            background-color: #f3f3f3;
+            border: 1px solid #d4d4d4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .cell {
+            border: 1px solid #e1e1e1;
+            padding: 2px 5px;
+            outline: none;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .cell:focus {
+            border: 2px solid #1a73e8;
+            padding: 1px 4px;
+        }
+        
+        .sheet-tabs {
+            display: flex;
+            background-color: #f3f3f3;
+            border-bottom: 1px solid #d4d4d4;
+            padding-left: 10px;
+        }
+        
+        .sheet-tab {
+            padding: 5px 15px;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            background-color: #f3f3f3;
+            cursor: pointer;
+            border-radius: 3px 3px 0 0;
+            margin-right: 2px;
+            position: relative;
+            bottom: -1px;
+        }
+        
+        .sheet-tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet-tabs" id="sheetTabs">
+        <div class="sheet-tab active">Sheet1</div>
+    </div>
+    
+    <div class="toolbar">
+        <button class="toolbar_icon_button" onclick="document.execCommand('copy')">©️</button>
+        <button class="toolbar_icon_button" onclick="document.execCommand('cut')">🔪</button>
+        <button class="toolbar_icon_button" onclick="document.execCommand('paste')">🗒️</button>
+
+        <select id="fontSelect">
+            <option value="Arial">Arial</option>
+            <option value="Calibri">Calibri</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+        </select>
+
+        <select id="fontSize">
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11" selected>11</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+        </select>
+
+        <button onclick="formate('bold')" title="Bold"><b>B</b></button>
+        <button onclick="formate('italic')" title="Italic"><i>I</i></button>
+        <button onclick="formate('underline')" title="Underline"><u>U</u></button>
+        <button onclick="formate('justifyLeft')" title="Align Left">≡</button>
+        <button onclick="formate('justifyCenter')" title="Center">≡</button>
+        <button onclick="formate('justifyRight')" title="Align Right">≡</button>
+        <button onclick="formate('justify')" title="Justify">≡</button>
+        <button onclick="formate('removeFormat')" title="Clear Formatting">✕</button>
+
+        <label>Text: <input type="color" onchange="applyColor(this.value,'color')" value="#000000"></label>
+        <label>Fill: <input type="color" onchange="applyColor(this.value,'BackgroundColor')" value="#ffffff"></label>
+
+        <button class="new_sheet_btn" onclick="addNewSheet()">+ New Sheet</button>
+        <button onclick="exportToCSV()" title="Download as CSV">⏬</button>
+        <input type="file" name="" id="importFile" accept=".csv">
+    </div>
+
+    <div class="sheet-container" id="sheetContainer">
+        <div class="grid" id="spreadsheetGrid">
+            <!-- Column headers (A, B, C, ...) --> 
+            <div class="header-cell" style="grid-column: 1; grid-row: 1;"></div>
+            <!-- This will be filled by JavaScript -->
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // Initialize the grid with column headers and row numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            const grid = document.getElementById('spreadsheetGrid');
+            
+            // Add column headers (A-Z)
+            for (let col = 1; col <= 26; col++) {
+                const header = document.createElement('div');
+                header.className = 'header-cell';
+                header.style.gridColumn = col + 1;
+                header.style.gridRow = 1;
+                header.textContent = String.fromCharCode(64 + col);
+                grid.appendChild(header);
+            }
+            
+            // Add row headers (1-100) and cells
+            for (let row = 1; row <= 100; row++) {
+                // Row number
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'row-header';
+                rowHeader.style.gridColumn = 1;
+                rowHeader.style.gridRow = row + 1;
+                rowHeader.textContent = row;
+                grid.appendChild(rowHeader);
+                
+                // Cells for this row
+                for (let col = 1; col <= 26; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.gridColumn = col + 1;
+                    cell.style.gridRow = row + 1;
+                    cell.setAttribute('contenteditable', 'true');
+                    cell.setAttribute('data-col', String.fromCharCode(64 + col));
+                    cell.setAttribute('data-row', row);
+                    grid.appendChild(cell);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
